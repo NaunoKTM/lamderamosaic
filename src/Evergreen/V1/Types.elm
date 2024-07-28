@@ -1,37 +1,26 @@
 module Evergreen.V1.Types exposing (..)
 
 import Browser
-import Browser.Dom
 import Browser.Navigation
 import Element
-import Http
+import Evergreen.V1.Mosaic
 import Url
-
-
-type Modal
-    = PictureOpen Int Int
 
 
 type alias FrontendModel =
     { key : Browser.Navigation.Key
     , message : String
     , maybeDevice : Maybe Element.Device
-    , modal : Maybe Modal
+    , modal : Maybe Evergreen.V1.Mosaic.Modal
     , deviceHeight : Int
     , deviceWidth : Int
+    , mosaic : Evergreen.V1.Mosaic.Mosaic
     }
 
 
 type alias BackendModel =
     { message : String
     }
-
-
-type KeyBoardKey
-    = Left
-    | Right
-    | Escape
-    | Other
 
 
 type FrontendMsg
@@ -42,10 +31,7 @@ type FrontendMsg
         { width : Int
         , height : Int
         }
-    | ReceiveWindowSize (Result Http.Error Browser.Dom.Viewport)
-    | ReceiveKeyboardEvent KeyBoardKey
-    | ModalOpen Modal
-    | ModalExit
+    | MosaicMsg Evergreen.V1.Mosaic.Msg
 
 
 type ToBackend
