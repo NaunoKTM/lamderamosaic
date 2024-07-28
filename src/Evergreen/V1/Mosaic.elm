@@ -1,10 +1,6 @@
 module Evergreen.V1.Mosaic exposing (..)
 
 
-type Modal
-    = PictureOpen Int
-
-
 type alias PictureSize =
     { width : Int
     , height : Int
@@ -17,6 +13,11 @@ type alias Picture =
     }
 
 
+type Modal
+    = PictureOpen Int
+    | ModalClosed
+
+
 type alias DisplayConfig =
     { baseWidth : Int
     , baseHeight : Int
@@ -26,7 +27,7 @@ type alias DisplayConfig =
 
 type alias Mosaic =
     { pictures : List Picture
-    , modal : Maybe Modal
+    , modal : Modal
     , config : DisplayConfig
     , screenSize :
         { deviceWidth : Int
@@ -44,6 +45,6 @@ type KeyBoardKey
 
 type Msg
     = NoOpMsg
-    | ModalOpen Modal
+    | ModalOpen Int
     | ModalExit
     | ReceiveKeyboardEvent KeyBoardKey

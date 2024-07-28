@@ -11,7 +11,6 @@ type alias FrontendModel =
     { key : Browser.Navigation.Key
     , message : String
     , maybeDevice : Maybe Element.Device
-    , modal : Maybe Evergreen.V1.Mosaic.Modal
     , deviceHeight : Int
     , deviceWidth : Int
     , mosaic : Evergreen.V1.Mosaic.Mosaic
