@@ -3,7 +3,7 @@ module Types exposing (..)
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
 import Element exposing (Device)
-import Mosaic exposing (Modal, Mosaic)
+import Mosaic exposing (Mosaic)
 import Url exposing (Url)
 
 
@@ -11,7 +11,6 @@ type alias FrontendModel =
     { key : Key
     , message : String
     , maybeDevice : Maybe Device
-    , modal : Maybe Modal
     , deviceHeight : Int
     , deviceWidth : Int
     , mosaic : Mosaic
