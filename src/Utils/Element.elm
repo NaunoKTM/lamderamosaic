@@ -2,12 +2,6 @@ module Utils.Element exposing (..)
 
 import Element exposing (htmlAttribute)
 import Html.Attributes
-import Types exposing (Picture)
-
-
-attributeNone : Element.Attribute msg
-attributeNone =
-    htmlAttribute <| Html.Attributes.style "none" "none"
 
 
 edges : { bottom : Int, left : Int, right : Int, top : Int }
