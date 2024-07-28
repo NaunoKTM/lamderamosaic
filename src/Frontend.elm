@@ -2,20 +2,19 @@ module Frontend exposing (..)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Dom as Dom
-import Browser.Events as Events
+import Browser.Events
 import Browser.Navigation as Nav
 import Element exposing (..)
 import Element.Background as Background
 import Element.Events exposing (onClick)
 import Element.Font as Font
-import Html
 import Html.Attributes as HA
-import Http
 import Json.Decode as D
 import Lamdera
 import List
 import List.Extra as List
 import Palette.Color exposing (..)
+import Platform.Sub as Sub
 import Task
 import Types exposing (..)
 import Url
@@ -30,7 +29,7 @@ app =
         , onUrlChange = UrlChanged
         , update = update
         , updateFromBackend = updateFromBackend
-        , subscriptions = \m -> Sub.none
+        , subscriptions = subscriptions
         , view = view
         }
 
@@ -131,7 +130,7 @@ updateFromBackend msg model =
 
 view : FrontendModel -> Browser.Document FrontendMsg
 view model =
-    { title = "Les Forges de la Croix"
+    { title = "Responsive mosaic with modal"
     , body =
         [ layout
             [ width fill
@@ -165,20 +164,28 @@ bodyView model =
             , centerY
             , paddingEach { top = 32, bottom = 32, left = 32, right = 32 }
             ]
-            [ displayPicturesGenericPhone defaultSizeConfig firstList 0 ]
+            [ displayMosaic defaultSizeConfig firstList 0 ]
+        ]
+
+
+subscriptions : FrontendModel -> Sub FrontendMsg
+subscriptions _ =
+    Sub.batch
+        [ Browser.Events.onResize (\w h -> GotNewSize { width = w, height = h })
+        , Browser.Events.onKeyDown (D.map ReceiveKeyboardEvent keyDecoder)
         ]
 
 
 firstList : List Picture
 firstList =
-    [ Picture "1.jpeg" { width = 270, height = 187 }
-    , Picture "2.jpeg" { width = 284, height = 177 }
-    , Picture "3.jpeg" { width = 300, height = 168 }
-    , Picture "4.jpeg" { width = 275, height = 183 }
-    , Picture "5.jpeg" { width = 294, height = 172 }
-    , Picture "6.jpeg" { width = 339, height = 149 }
-    , Picture "7.jpeg" { width = 291, height = 173 }
-    , Picture "8.jpeg" { width = 266, height = 189 }
+    [ Picture "1.jpg" { width = 880, height = 609 }
+    , Picture "2.jpg" { width = 1200, height = 800 }
+    , Picture "3.jpg" { width = 845, height = 321 }
+    , Picture "4.jpg" { width = 1080, height = 474 }
+    , Picture "5.jpg" { width = 1024, height = 576 }
+    , Picture "6.jpg" { width = 1080, height = 474 }
+    , Picture "7.jpg" { width = 1024, height = 576 }
+    , Picture "8.jpg" { width = 1280, height = 853 }
     ]
 
 
@@ -207,6 +214,8 @@ onePicture blockWidth blockHeight picture listIndex id =
             [ onClick <| ModalOpen <| PictureOpen listIndex id
             , pointer
             , htmlAttribute <| HA.id <| picture.id
+            , centerX
+            , centerY
             , clip
             ]
         <|
@@ -241,21 +250,8 @@ makeItComp displayConfig =
     { displayConfig | baseHeight = newY }
 
 
-
--- adjustSpacingForLeftColumn : DisplayConfig -> Int
--- config =
---     config.baseHeight - (ceiling ((toFloat config.baseHeight - toFloat config.spacingSize) / 2) * 2)
--- adjustSpacingForRightColumn : DisplayConfig -> Int
--- config =
---     (config.baseHeight - (ceiling ((toFloat config.baseHeight - toFloat (2 * config.spacingSize)) / 3) * 3)) // 2
--- 1.6
--- -> 1 floor
--- -> 2 ceiling
--- -> 2 round
-
-
-displayPicturesGenericPhone : DisplayConfig -> List Picture -> Int -> Element FrontendMsg
-displayPicturesGenericPhone config pictures listIndex =
+displayMosaic : DisplayConfig -> List Picture -> Int -> Element FrontendMsg
+displayMosaic config pictures listIndex =
     let
         fixConfig =
             makeItComp config
@@ -384,7 +380,7 @@ displayPicturesGenericPhone config pictures listIndex =
     el [ centerX ] <| layoutPictures sortedPictures
 
 
-getHeight : String -> List ( String, ImageSize ) -> Maybe Int
+getHeight : String -> List ( String, PictureSize ) -> Maybe Int
 getHeight id sizes =
     List.head <|
         List.filterMap
@@ -408,37 +404,44 @@ sortByHeight pictures =
     List.sortWith compareHeights pictures
 
 
-maybeNext : Int -> Int -> Element FrontendMsg
-maybeNext listIndex index =
-    row
-        [ centerY
-        , paddingEach { edges | right = 40, left = 40 }
-        , Font.color g400
-        , Font.size 64
-        , pointer
-        , Utils.greedyOnClick <| ModalOpen <| PictureOpen listIndex (index + 1)
-        ]
-        [ text ">"
-        ]
+nextPic : Int -> Int -> Element FrontendMsg
+nextPic listIndex index =
+    if index == List.length (getListFromIndex listIndex) - 1 then
+        el [ width <| px 100, height fill ] none
+
+    else
+        el
+            [ width <| px 100
+            , paddingEach { edges | right = 30, left = 30 }
+            , centerY
+            , Font.color g400
+            , Font.size 67
+            , moveUp 3.5
+            , pointer
+            , Utils.greedyOnClick <| ModalOpen <| PictureOpen listIndex (index + 1)
+            ]
+        <|
+            text ">"
 
 
-maybePrevious : Int -> Int -> Element FrontendMsg
-maybePrevious listIndex index =
+previousPic : Int -> Int -> Element FrontendMsg
+previousPic listIndex index =
     if index == 0 then
         el [ width <| px 100, height fill ] none
 
     else
-        row
+        el
             [ width <| px 100
+            , paddingEach { edges | right = 30, left = 30 }
             , centerY
-            , paddingEach { edges | left = 40, right = 40 }
             , Font.color g400
-            , Font.size 64
+            , Font.size 67
+            , moveUp 3.5
             , pointer
             , Utils.greedyOnClick <| ModalOpen <| PictureOpen listIndex (index - 1)
             ]
-            [ text "<"
-            ]
+        <|
+            text "<"
 
 
 overlayEl : Element msg -> Element msg
@@ -503,12 +506,12 @@ displayModal modal model =
                         Maybe.map
                             (\picture ->
                                 let
-                                    images =
+                                    pictures =
                                         getListFromIndex listIndex
 
                                     -- Calculate available space
                                     availableWidth =
-                                        model.deviceWidth - 40
+                                        model.deviceWidth - 300
 
                                     availableHeight =
                                         model.deviceHeight - 80
@@ -537,15 +540,10 @@ displayModal modal model =
                                     navigationRow =
                                         row
                                             [ centerX
-                                            , spacing 20
-                                            , paddingEach { edges | bottom = 20 }
+                                            , spacing 32
                                             ]
-                                            [ maybePrevious listIndex pictureId
-                                            , if pictureId < List.length images - 1 then
-                                                maybeNext listIndex pictureId
-
-                                              else
-                                                el [ width <| px 100 ] none
+                                            [ previousPic listIndex pictureId
+                                            , nextPic listIndex pictureId
                                             ]
                                 in
                                 column
@@ -566,6 +564,7 @@ displayModal modal model =
                                                 (image
                                                     [ width (px finalWidth)
                                                     , height (px finalHeight)
+                                                    , paddingEach { edges | top = 20 }
                                                     ]
                                                     { description = picture.id, src = picture.id }
                                                 )
@@ -573,26 +572,28 @@ displayModal modal model =
                                             ]
 
                                       else
-                                        row [ width fill, height fill, paddingXY 0 0 ]
-                                            [ maybePrevious listIndex pictureId
+                                        row [ width fill, height fill ]
+                                            [ el [ width (px 100), height fill ] (previousPic listIndex pictureId)
                                             , el
-                                                [ centerX
-                                                , centerY
+                                                [ centerY
+                                                , centerX
                                                 , width (px finalWidth)
                                                 , height (px finalHeight)
+                                                , clip
                                                 ]
                                                 (image
                                                     [ width (px finalWidth)
                                                     , height (px finalHeight)
+                                                    , centerY
                                                     , Utils.greedyOnClick NoOpFrontendMsg
                                                     ]
                                                     { description = picture.id, src = picture.id }
                                                 )
-                                            , if pictureId < List.length images - 1 then
-                                                maybeNext listIndex pictureId
+                                            , if pictureId < List.length pictures - 1 then
+                                                el [ width (px 100), height fill ] (nextPic listIndex pictureId)
 
                                               else
-                                                none
+                                                el [ width (px 100), height fill ] none
                                             ]
                                     ]
                             )

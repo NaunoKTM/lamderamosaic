@@ -48,11 +48,11 @@ type ToFrontend
 
 type alias Picture =
     { id : String
-    , size : ImageSize
+    , size : PictureSize
     }
 
 
-type alias ImageSize =
+type alias PictureSize =
     { width : Int
     , height : Int
     }
