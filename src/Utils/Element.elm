@@ -2,7 +2,6 @@ module Utils.Element exposing (..)
 
 import Element exposing (htmlAttribute)
 import Html.Attributes
-import Types exposing (Picture)
 
 
 attributeNone : Element.Attribute msg

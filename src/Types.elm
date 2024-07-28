@@ -5,6 +5,7 @@ import Browser.Dom as Dom
 import Browser.Navigation exposing (Key)
 import Element exposing (Device)
 import Http
+import Mosaic exposing (Modal, Mosaic)
 import Url exposing (Url)
 
 
@@ -15,6 +16,7 @@ type alias FrontendModel =
     , modal : Maybe Modal
     , deviceHeight : Int
     , deviceWidth : Int
+    , mosaic : Mosaic
     }
 
 
@@ -29,9 +31,13 @@ type FrontendMsg
     | NoOpFrontendMsg
     | GotNewSize { width : Int, height : Int }
     | ReceiveWindowSize (Result Http.Error Dom.Viewport)
-    | ReceiveKeyboardEvent KeyBoardKey
-    | ModalOpen Modal
-    | ModalExit
+    | MosaicMsg Mosaic.Msg
+
+
+
+-- | ReceiveKeyboardEvent KeyBoardKey
+-- | ModalOpen Modal
+-- | ModalExit
 
 
 type ToBackend
@@ -46,31 +52,24 @@ type ToFrontend
     = NoOpToFrontend
 
 
-type alias Picture =
-    { id : String
-    , size : PictureSize
-    }
 
-
-type alias PictureSize =
-    { width : Int
-    , height : Int
-    }
-
-
-type Modal
-    = PictureOpen Int Int
-
-
-type KeyBoardKey
-    = Left
-    | Right
-    | Escape
-    | Other
-
-
-type alias DisplayConfig =
-    { baseWidth : Int
-    , baseHeight : Int
-    , spacingSize : Int
-    }
+-- type alias Picture =
+--     { id : String
+--     , size : PictureSize
+--     }
+-- type alias PictureSize =
+--     { width : Int
+--     , height : Int
+--     }
+-- type Modal
+--     = PictureOpen Int Int
+-- type KeyBoardKey
+--     = Left
+--     | Right
+--     | Escape
+--     | Other
+-- type alias DisplayConfig =
+--     { baseWidth : Int
+--     , baseHeight : Int
+--     , spacingSize : Int
+--     }

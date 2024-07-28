@@ -1,0 +1,4 @@
+[submodule "mosaic"]
+	path = elm-ui-mosaic
+	url = https://github.com/NaunoKTM/mosaic.git
+	branch = main
