@@ -1,10 +1,8 @@
 module Types exposing (..)
 
 import Browser exposing (UrlRequest)
-import Browser.Dom as Dom
 import Browser.Navigation exposing (Key)
 import Element exposing (Device)
-import Http
 import Mosaic exposing (Modal, Mosaic)
 import Url exposing (Url)
 
@@ -30,14 +28,7 @@ type FrontendMsg
     | UrlChanged Url
     | NoOpFrontendMsg
     | GotNewSize { width : Int, height : Int }
-    | ReceiveWindowSize (Result Http.Error Dom.Viewport)
     | MosaicMsg Mosaic.Msg
-
-
-
--- | ReceiveKeyboardEvent KeyBoardKey
--- | ModalOpen Modal
--- | ModalExit
 
 
 type ToBackend
@@ -50,26 +41,3 @@ type BackendMsg
 
 type ToFrontend
     = NoOpToFrontend
-
-
-
--- type alias Picture =
---     { id : String
---     , size : PictureSize
---     }
--- type alias PictureSize =
---     { width : Int
---     , height : Int
---     }
--- type Modal
---     = PictureOpen Int Int
--- type KeyBoardKey
---     = Left
---     | Right
---     | Escape
---     | Other
--- type alias DisplayConfig =
---     { baseWidth : Int
---     , baseHeight : Int
---     , spacingSize : Int
---     }

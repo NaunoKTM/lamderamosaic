@@ -35,15 +35,6 @@ app =
         }
 
 
-
--- type alias Mosaic =
---     { pictures : List Picture
---     , listIndex : Int
---     , modal : Maybe Modal
---     , config : DisplayConfig
---     }
-
-
 init : Url.Url -> Nav.Key -> ( FrontendModel, Cmd FrontendMsg )
 init url key =
     ( { key = key
@@ -54,7 +45,8 @@ init url key =
       , deviceWidth = 0
       , mosaic = Mosaic.init defaultSizeConfig firstList
       }
-    , Task.attempt ReceiveWindowSize Dom.getViewport
+    , Dom.getViewport
+        |> Task.perform (\{ viewport } -> GotNewSize { width = round viewport.width, height = round viewport.height })
     )
 
 
@@ -84,50 +76,13 @@ update msg model =
                 | maybeDevice = Just <| classifyDevice viewPort
                 , deviceHeight = viewPort.height
                 , deviceWidth = viewPort.width
+                , mosaic = model.mosaic |> Mosaic.updateScreenSize { deviceHeight = viewPort.height, deviceWidth = viewPort.width }
               }
             , Cmd.none
             )
-
-        ReceiveWindowSize (Ok viewport) ->
-            ( { model
-                | maybeDevice = Just <| classifyDevice { height = round viewport.viewport.height, width = round viewport.viewport.width }
-                , deviceHeight = round viewport.viewport.height
-                , deviceWidth = round viewport.viewport.width
-              }
-            , Cmd.none
-            )
-
-        ReceiveWindowSize (Err _) ->
-            ( model, Cmd.none )
 
         MosaicMsg subMsg ->
             ( { model | mosaic = Mosaic.update subMsg model.mosaic }, Cmd.none )
-
-
-
--- ReceiveKeyboardEvent direction ->
---     case ( direction, model.modal ) of
---         ( Left, Just (PictureOpen _ 0) ) ->
---             ( model, Cmd.none )
---         ( Left, Just (PictureOpen listIndex index) ) ->
---             ( { model | modal = Just <| PictureOpen listIndex (index - 1) }, Cmd.none )
---         ( Right, Just (PictureOpen listIndex index) ) ->
---             let
---                 pictures =
---                     getListFromIndex listIndex
---             in
---             if index < List.length pictures - 1 then
---                 ( { model | modal = Just <| PictureOpen listIndex (index + 1) }, Cmd.none )
---             else
---                 ( model, Cmd.none )
---         ( Escape, _ ) ->
---             ( { model | modal = Nothing }, Cmd.none )
---         _ ->
---             ( model, Cmd.none )
--- ModalOpen modal ->
---     ( { model | modal = Just modal }, Cmd.none )
--- ModalExit ->
---     ( { model | modal = Nothing }, Cmd.none )
 
 
 updateFromBackend : ToFrontend -> FrontendModel -> ( FrontendModel, Cmd FrontendMsg )
@@ -156,7 +111,7 @@ bodyView model =
     column
         [ width fill
         , height fill
-        , inFront <| Element.map MosaicMsg <| Mosaic.displayModal model.mosaic model
+        , inFront <| Element.map MosaicMsg <| Mosaic.displayModal model.mosaic
         ]
         [ column
             [ width fill
@@ -172,11 +127,10 @@ bodyView model =
 
 
 subscriptions : FrontendModel -> Sub FrontendMsg
-subscriptions _ =
+subscriptions model =
     Sub.batch
         [ Browser.Events.onResize (\w h -> GotNewSize { width = w, height = h })
-
-        -- , Browser.Events.onKeyDown (D.map ReceiveKeyboardEvent keyDecoder)
+        , Sub.map MosaicMsg (Mosaic.subscriptions model.mosaic)
         ]
 
 
@@ -215,8 +169,7 @@ onePicture blockWidth blockHeight picture listIndex id =
     in
     el [ width <| px blockWidth, height <| px blockHeight, clip ] <|
         el
-            [ --  onClick <| ModalOpen <| PictureOpen listIndex id
-              pointer
+            [ pointer
             , htmlAttribute <| HA.id <| picture.id
             , centerX
             , centerY
@@ -422,8 +375,6 @@ nextPic listIndex index =
             , Font.size 67
             , moveUp 3.5
             , pointer
-
-            -- , Utils.greedyOnClick <| ModalOpen <| PictureOpen listIndex (index + 1)
             ]
         <|
             text ">"
@@ -443,8 +394,6 @@ previousPic listIndex index =
             , Font.size 67
             , moveUp 3.5
             , pointer
-
-            -- , Utils.greedyOnClick <| ModalOpen <| PictureOpen listIndex (index - 1)
             ]
         <|
             text "<"
@@ -465,128 +414,6 @@ overlayEl =
         ]
 
 
-
--- toDirection : String -> KeyBoardKey
--- toDirection string =
---     case string of
---         "ArrowLeft" ->
---             Left
---         "ArrowRight" ->
---             Right
---         "Escape" ->
---             Escape
---         _ ->
---             Other
--- keyDecoder : D.Decoder KeyBoardKey
--- keyDecoder =
---     D.map toDirection (D.field "key" D.string)
-
-
 findPicture : List Picture -> Int -> Maybe Picture
 findPicture pictures pictureId =
     List.getAt pictureId pictures
-
-
-
--- displayModal : Modal -> FrontendModel -> Element FrontendMsg
--- displayModal modal model =
---     overlayEl <|
---         el
---             [ width fill
---             , height fill
---             , centerX
---             , onClick ModalExit
---             , clip
---             ]
---         <|
---             case modal of
---                 PictureOpen listIndex pictureId ->
---                     let
---                         maybePicture =
---                             findPicture (getListFromIndex listIndex) pictureId
---                     in
---                     Maybe.withDefault none <|
---                         Maybe.map
---                             (\picture ->
---                                 let
---                                     pictures =
---                                         getListFromIndex listIndex
---                                     -- Calculate available space
---                                     availableWidth =
---                                         model.deviceWidth - 300
---                                     availableHeight =
---                                         model.deviceHeight - 80
---                                     -- Calculate scaling factor
---                                     widthScale =
---                                         toFloat availableWidth / toFloat picture.size.width
---                                     heightScale =
---                                         toFloat availableHeight / toFloat picture.size.height
---                                     scale =
---                                         min widthScale heightScale
---                                     -- Calculate final dimensions
---                                     finalWidth =
---                                         round (toFloat picture.size.width * scale)
---                                     finalHeight =
---                                         round (toFloat picture.size.height * scale)
---                                     -- Determine if we need to show navigation below
---                                     showNavigationBelow =
---                                         availableWidth < 1120
---                                     navigationRow =
---                                         row
---                                             [ centerX
---                                             , spacing 32
---                                             ]
---                                             [ previousPic listIndex pictureId
---                                             , nextPic listIndex pictureId
---                                             ]
---                                 in
---                                 column
---                                     [ centerX
---                                     , centerY
---                                     , width fill
---                                     , height fill
---                                     ]
---                                     [ if showNavigationBelow then
---                                         column [ width fill, height fill ]
---                                             [ el
---                                                 [ centerX
---                                                 , centerY
---                                                 , width (px finalWidth)
---                                                 , height (px finalHeight)
---                                                 , spacing 32
---                                                 ]
---                                                 (image
---                                                     [ width (px finalWidth)
---                                                     , height (px finalHeight)
---                                                     , paddingEach { edges | top = 20 }
---                                                     ]
---                                                     { description = picture.id, src = picture.id }
---                                                 )
---                                             , navigationRow
---                                             ]
---                                       else
---                                         row [ width fill, height fill ]
---                                             [ el [ width (px 100), height fill ] (previousPic listIndex pictureId)
---                                             , el
---                                                 [ centerY
---                                                 , centerX
---                                                 , width (px finalWidth)
---                                                 , height (px finalHeight)
---                                                 , clip
---                                                 ]
---                                                 (image
---                                                     [ width (px finalWidth)
---                                                     , height (px finalHeight)
---                                                     , centerY
---                                                     , Utils.greedyOnClick NoOpFrontendMsg
---                                                     ]
---                                                     { description = picture.id, src = picture.id }
---                                                 )
---                                             , if pictureId < List.length pictures - 1 then
---                                                 el [ width (px 100), height fill ] (nextPic listIndex pictureId)
---                                               else
---                                                 el [ width (px 100), height fill ] none
---                                             ]
---                                     ]
---                             )
---                             maybePicture
