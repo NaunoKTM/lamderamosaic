@@ -124,7 +124,7 @@ subscriptions : FrontendModel -> Sub FrontendMsg
 subscriptions model =
     Sub.batch
         [ Browser.Events.onResize (\w h -> GotNewSize { width = w, height = h })
-        , Sub.map MosaicMsg (Mosaic.subscriptions model.mosaic)
+        , Sub.map MosaicMsg <| Mosaic.subscriptions model.mosaic
         ]
 
 
